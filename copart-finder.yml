@@ -1,0 +1,48 @@
+name: BMW Copart Finder
+
+on:
+  schedule:
+    # Hər gün 09:00 UTC-də işləyir (Azərbaycan vaxtı 13:00)
+    - cron: '0 9 * * *'
+  workflow_dispatch:  # Manual olaraq işə sala bilərsiz
+
+jobs:
+  search-copart:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        pip install selenium webdriver-manager requests
+    
+    - name: Install Chrome
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y chromium-browser chromium-chromedriver
+    
+    - name: Run Copart Finder
+      run: |
+        python copart_real_finder.py
+    
+    - name: Upload results
+      uses: actions/upload-artifact@v3
+      with:
+        name: copart-results
+        path: copart_results.json
+        retention-days: 30
+    
+    - name: Commit and push results
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add copart_results.json || true
+        git commit -m "Update Copart results $(date)" || true
+        git push || true
